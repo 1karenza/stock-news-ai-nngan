@@ -1,0 +1,16 @@
+@echo off
+setlocal
+cd /d "%~dp0"
+if not exist ".venv\Scripts\python.exe" (
+    py -3 -m venv .venv
+    if errorlevel 1 goto :failed
+)
+".venv\Scripts\python.exe" -m pip install -r requirements.txt
+if errorlevel 1 goto :failed
+".venv\Scripts\python.exe" -m streamlit run app.py
+if errorlevel 1 goto :failed
+exit /b 0
+:failed
+echo Could not start. Check that Python is installed and your network is available.
+pause
+exit /b 1

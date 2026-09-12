@@ -10,11 +10,18 @@ from bs4 import BeautifulSoup
 def extract_article(document, title=""):
     soup = BeautifulSoup(document, "html.parser")
     structured = []
+    title = re.sub(r"\s+-\s+[^-]+$", "", title)
+    title_words = set(re.findall(r"\w{3,}", html.unescape(title).lower()))
+
+    def matches_title(text):
+        words = set(re.findall(r"\w{3,}", html.unescape(text).lower()))
+        return not title_words or len(title_words & words) >= max(2, len(title_words) * .35)
 
     def visit(value):
         if isinstance(value, dict):
             body = value.get("articleBody")
-            if isinstance(body, str):
+            headline = value.get("headline") or value.get("name") or ""
+            if isinstance(body, str) and (not headline or matches_title(headline)):
                 structured.append(BeautifulSoup(body, "html.parser").get_text(" ", strip=True))
             for child in value.values():
                 visit(child)
@@ -30,9 +37,9 @@ def extract_article(document, title=""):
     for tag in soup.select("script, style, noscript, nav, aside, footer, .related-news, .related-articles"):
         tag.decompose()
     candidates = structured[:]
-    for selector in ("[itemprop='articleBody']", ".article-body", ".article-content",
+    for selector in ("[itemprop='articleBody']", ".article-editor", ".mekong-detail-body", ".article-body", ".article-content",
                      ".detail-content", ".content-detail", ".fck_detail", ".entry-content",
-                     ".post-content", ".detail__content", "article"):
+                     ".post-content", ".detail__content"):
         for node in soup.select(selector):
             paras = [p.get_text(" ", strip=True) for p in node.select("p")]
             text = "\n".join(p for p in paras if len(p) > 35)
@@ -44,14 +51,22 @@ def extract_article(document, title=""):
             break
     if candidates:
         return max(candidates, key=len)[:16000]
+    # On news sites <article> often denotes a related-story card, not the body.
+    # Require several paragraphs and a title match before using this fallback.
+    for node in soup.select("article"):
+        paras = [p.get_text(" ", strip=True) for p in node.select("p")]
+        paras = [text for text in paras if len(text) > 35]
+        text = "\n".join(paras)
+        if len(paras) >= 3 and matches_title(node.get_text(" ", strip=True)):
+            candidates.append(text)
+    if candidates:
+        return max(candidates, key=len)[:16000]
     # A publisher description is still useful evidence; don't collect unrelated
     # page-wide paragraphs from navigation, sign-in or consent screens.
     description = soup.select_one('meta[property="og:description"], meta[name="description"]')
     text = description.get("content", "").strip() if description else ""
     if title and text:
-        title_words = set(re.findall(r"\w{3,}", title.lower()))
-        content_words = set(re.findall(r"\w{3,}", text.lower()))
-        if len(title_words & content_words) < 2:
+        if not matches_title(text):
             return ""
     return text
 

@@ -36,7 +36,7 @@ input, textarea, button, select, [data-testid="stMarkdownContainer"],
   backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(43,41,36,.05);
 }
-.block-container { max-width: 1480px; padding: 2.4rem 3.4rem 2rem; }
+.block-container { max-width: 1480px; padding: 5rem 3.4rem 2rem; }
 h1,h2,h3,h4 { color: var(--ink) !important; font-family: 'Lora', Georgia, serif !important; font-weight: 400; letter-spacing: -.025em; }
 h3 { font-size: 1.8rem !important; font-weight: 400 !important; }
 h4 { font-family: 'Be Vietnam Pro', sans-serif !important; font-size: 1.1rem !important; font-weight: 600; letter-spacing: -.02em; }
@@ -48,7 +48,10 @@ a { color: var(--gold-ink) !important; text-underline-offset: 4px; }
 .eyebrow { font-size: 10px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; line-height: 1.8; }
 .masthead { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 0 0 1.2rem; border-bottom: 1px solid var(--line); }
 .wordmark { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; letter-spacing: .09em; }
-.brand-monogram { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--gold-ink); color: var(--gold-ink); font-family: 'Lora', Georgia, serif; font-size: 17px; font-weight: 400; letter-spacing: -.08em; }
+.brand-monogram { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border: 1px solid rgba(128,87,30,.2); border-radius: 50%; background: var(--gold); color: var(--gold-ink); font-family: Georgia, serif; font-size: 32px; font-weight: 400; letter-spacing: 0; transition: transform 600ms var(--ease); }
+.wordmark:hover .brand-monogram { transform: rotate(20deg); }
+.brand-name { font-family: 'Lora',Georgia,serif; font-size: 27px; line-height: 1.2; letter-spacing: -.035em; }
+.brand-subtitle { display: block; font-family: 'Be Vietnam Pro',sans-serif; font-size: 8px; line-height: 1.7; letter-spacing: .2em; font-weight: 500; }
 .brand-ai { font-size: 10px; padding: 3px 5px; background: var(--gold); letter-spacing: .05em; }
 .edition { color: var(--muted); font-size: 10px; font-weight: 400; letter-spacing: .1em; text-transform: uppercase; }
 .editorial-hero { position: relative; display: grid; grid-template-columns: minmax(0,1fr) 225px; gap: 36px; align-items: end; padding: 2rem 0 1.7rem; }
@@ -57,7 +60,7 @@ a { color: var(--gold-ink) !important; text-underline-offset: 4px; }
 .editorial-hero .hero-line { display: block; animation: reveal 900ms var(--ease) both; }
 .editorial-hero .hero-line + .hero-line { color: var(--gold-ink); font-weight: 400; font-style: italic; letter-spacing: -.035em; animation-delay: 80ms; }
 .hero-copy { color: var(--muted); font-size: 13px; line-height: 1.8; margin: .7rem 0; }
-.hero-brief { border-left: 1px solid rgba(128,87,30,.25); padding-left: 22px; margin-bottom: 8px; }
+.hero-brief { border: 1px solid rgba(128,87,30,.2); border-radius: 2px 22px 2px 2px; padding: 20px; margin-bottom: 8px; background: rgba(255,243,210,.6); }
 .brief-mark { display: inline-block; color: var(--gold-ink); font-size: 28px; line-height: 1; transition: transform 400ms var(--ease); }
 .hero-brief:hover .brief-mark { transform: translate(3px,-3px); }
 .brief-note { font-size: 10px; color: var(--gold-ink); line-height: 1.7; }
@@ -205,9 +208,9 @@ input:disabled { -webkit-text-fill-color: #777064 !important; opacity: .8; }
   }
 }
 @media (max-width: 900px) {
-  .block-container { padding: 1.8rem 1.5rem; }
+  .block-container { padding: 4.5rem 1.5rem 1.8rem; }
   .editorial-hero { grid-template-columns: 1fr; gap: 18px; }
-  .hero-brief { padding: 0; border: 0; margin: 0; max-width: 530px; }
+  .hero-brief { padding: 0; border: 0; margin: 0; max-width: 530px; background: transparent; }
   .brief-mark, .brief-note { display: none; }
   .hero-copy { margin: 0; }
   .editorial-hero h1 { font-size: clamp(2.4rem,4.5vw,3.6rem) !important; }
@@ -235,5 +238,5 @@ input:disabled { -webkit-text-fill-color: #777064 !important; opacity: .8; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   .stButton button:hover, .stDownloadButton button:hover, [data-testid="stFormSubmitButton"] button:hover,
-  [data-testid="stLinkButton"] a:hover, [data-testid="stMetric"]:hover, .workflow-card:hover, .hero-brief:hover .brief-mark { transform: none; }
+  [data-testid="stLinkButton"] a:hover, [data-testid="stMetric"]:hover, .workflow-card:hover, .hero-brief:hover .brief-mark, .wordmark:hover .brand-monogram { transform: none; }
 }

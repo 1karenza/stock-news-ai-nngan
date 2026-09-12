@@ -1,4 +1,7 @@
-# Stock News AI Dashboard V5 — Golden Summer
+# Nắng · Market Notes
+
+Sổ tay tin doanh nghiệp và định giá trái phiếu, với giao diện vàng mật ong,
+nền kem và tiêu đề serif. Repository độc lập: `1karenza/stock-news-ai-nngan`.
 
 ## Tab 1 — Stock News
 - Quét tin theo mã cổ phiếu.
@@ -27,15 +30,29 @@ App tính:
 Có 3 bộ dữ liệu mẫu để test ngay.
 
 ## Chạy
-Double-click START_HERE_WINDOWS.bat
+Windows: cài Python 3.12 trở lên, rồi mở `START_HERE_WINDOWS.bat`.
+Launcher tạo môi trường `.venv`, cài thư viện và mở app.
+
+Hoặc chạy trong terminal tại folder repo:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+.venv\Scripts\python.exe -m streamlit run app.py
+```
+
+Kiểm tra trước khi deploy:
+
+```powershell
+.venv\Scripts\python.exe -m unittest discover -p "test_*.py" -v
+```
 
 ## GitHub và deployment
 
 Repository production: https://github.com/1karenza/stock-news-ai-nngan,
 nhánh `main`. Streamlit Cloud dùng file `app.py` tại root repo.
 Production: https://stock-news-ai-nngan.streamlit.app/
-Repository `1karenza/stock-news-ai` thuộc ứng dụng `stock-news-kngan.streamlit.app`.
-Kiểm tra `git remote -v` trước khi push để chọn đúng repository production.
+Kiểm tra `git remote -v`: origin phải là `1karenza/stock-news-ai-nngan`.
 
 Sau khi sửa code, chạy thử bằng `streamlit run app.py` hoặc
 `START_HERE_WINDOWS.bat`. Mở terminal tại folder này rồi chạy:
@@ -44,7 +61,7 @@ Sau khi sửa code, chạy thử bằng `streamlit run app.py` hoặc
 git status
 git remote -v
 git diff
-git add app.py news_content.py news_fetch.py assets requirements.txt README.md .gitignore .streamlit/config.toml
+git add app.py news_content.py news_fetch.py assets requirements.txt README.md .gitignore .streamlit/config.toml START_HERE_WINDOWS.bat test_bond_v5.py test_news_fetch.py
 git diff --cached
 git commit -m "Update dashboard"
 git push origin main
@@ -65,7 +82,7 @@ commit thay đổi local, giải quyết conflict nếu có, rồi push lại. K
 Không commit `.venv`, `.env`, API keys hoặc `.streamlit/secrets.toml`.
 API key production được cấu hình trong Streamlit App Settings / Secrets.
 
-## Giao diện Golden Summer
+## Giao diện Nắng
 
 Style chung nằm trong `assets/editorial.css`; phải commit cả folder `assets`
 khi deploy. Theme native của Streamlit nằm trong `.streamlit/config.toml`.
@@ -80,6 +97,15 @@ Giao diện hỗ trợ màn hình nhỏ, focus bàn phím và `prefers-reduced-m
 
 Giữ giá lý thuyết, YTM, duration, dòng tiền và xuất CSV; bổ sung đánh giá
 0–100 theo định giá, lợi suất, tín nhiệm, thanh khoản và thông tin bảo đảm.
-Thiếu tín nhiệm hoặc thanh khoản sẽ hiển thị “CẦN THÊM DỮ LIỆU”.
+Thiếu tín nhiệm, thanh khoản hoặc chưa tính được YTM/duration sẽ hiển thị
+“CẦN THÊM DỮ LIỆU”. Chênh lệch định giá được tính theo giá lý thuyết.
 Kết luận giải thích điểm hỗ trợ và rủi ro, không thay thế thẩm định đầu tư.
 OpenAI là tùy chọn; không có API key vẫn dùng tóm tắt từ dữ liệu công khai.
+
+## Đọc nguồn tin
+
+`news_fetch.py` xử lý link Google News và tải bài từ trang báo bằng requests.
+Mỗi request có timeout và giới hạn kích thước; nội dung tiếng Việt được phân
+tích từ bytes gốc. Lỗi tải không được cache, để nút tải lại có thể thử lại.
+Nguồn yêu cầu đăng nhập, chặn truy cập hoặc chưa đọc được chỉ hiển thị thông
+tin công khai đã có, kèm trạng thái nguồn; app không tự bổ sung số liệu thiếu.

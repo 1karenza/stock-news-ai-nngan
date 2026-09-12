@@ -1,14 +1,32 @@
 """Regression checks for restoring V5 alongside the current news application."""
 import unittest
+import ast
 from pathlib import Path
 
 from streamlit.testing.v1 import AppTest
 
 
-APP_PATH = Path(__file__).resolve().parents[1] / "app.py"
+APP_PATH = Path(__file__).resolve().parent / "app.py"
 
 
 class BondV5Tests(unittest.TestCase):
+    def test_assessment_percentage_and_missing_yield(self):
+        # Load the calculation independently from Streamlit's page execution.
+        tree = ast.parse(APP_PATH.read_text(encoding="utf-8"))
+        function = next(node for node in tree.body if isinstance(node, ast.FunctionDef)
+                        and node.name == "bond_investment_assessment")
+        namespace = {}
+        exec(compile(ast.Module(body=[function], type_ignores=[]), str(APP_PATH), "exec"), namespace)
+        assess = namespace["bond_investment_assessment"]
+        inputs = dict(fair_price=100, market_price=80, ytm=0.12, required_yield=0.08,
+                      mod_duration=2, credit_rating="AAA", liquidity="Cao")
+        result = assess(**inputs)
+        self.assertAlmostEqual(result["valuation_gap"], 0.20)
+        self.assertTrue(any("20.00%" in reason for reason in result["reasons"]))
+        for missing in ("ytm", "mod_duration"):
+            incomplete = assess(**{**inputs, missing: None})
+            self.assertEqual(incomplete["verdict"], "CẦN THÊM DỮ LIỆU")
+
     def test_presets_keep_price_duration_and_cashflow_results(self):
         app = AppTest.from_file(str(APP_PATH), default_timeout=30).run()
         self.assertFalse(app.exception)

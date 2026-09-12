@@ -23,7 +23,7 @@ except Exception:
 
 
 st.set_page_config(
-    page_title="Stock News AI Dashboard",
+    page_title="Nắng · Market Notes",
     page_icon="☀️",
     layout="wide",
 )
@@ -86,7 +86,9 @@ def fetch_google_news(ticker: str, days: int = 7, max_items: int = 20):
         f"q={quote_plus(query)}&hl=vi&gl=VN&ceid=VN:vi"
     )
 
-    feed = feedparser.parse(url)
+    response = requests.get(url, timeout=(5, 15))
+    response.raise_for_status()
+    feed = feedparser.parse(response.content)
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     rows, seen = [], set()
 
@@ -172,7 +174,7 @@ def classify_news(text: str) -> str:
         return "Trái phiếu"
     if any(k in s for k in [
         "lãi suất", "tỷ giá", "usd", "fed", "gdp", "cpi", "lạm phát",
-        "vn-index", "ngân hàng nhà nước", "thuế", "chính sách", "nghị định"
+        "vn-index", "ngân hàng nhà nước", "thuế suất", "chính sách", "nghị định"
     ]):
         return "Vĩ mô / Chính sách"
     if any(k in s for k in [
@@ -456,7 +458,7 @@ def bond_investment_assessment(
     risks = []
 
     # 1) Valuation: 35 pts
-    valuation_gap = (fair_price / market_price - 1) if market_price > 0 else 0
+    valuation_gap = (fair_price - market_price) / fair_price if fair_price > 0 else 0
     if valuation_gap >= 0.05:
         valuation_pts = 35
         reasons.append(f"Giá thị trường thấp hơn giá lý thuyết khoảng {valuation_gap*100:.2f}%.")
@@ -548,14 +550,15 @@ def bond_investment_assessment(
         risks.append("Chưa rõ tình trạng tài sản bảo đảm.")
 
     score = max(0, min(100, round(score)))
-    missing_core = credit_rating == "Không rõ" or liquidity == "Không rõ"
+    missing_core = (credit_rating == "Không rõ" or liquidity == "Không rõ"
+                    or ytm is None or mod_duration is None)
 
     if missing_core:
         verdict = "CẦN THÊM DỮ LIỆU"
         level = "warning"
         conclusion = (
             "Định giá có thể đang hấp dẫn hoặc không, nhưng chưa đủ cơ sở để kết luận nên đầu tư "
-            "vì còn thiếu ít nhất dữ liệu tín nhiệm hoặc thanh khoản."
+            "vì còn thiếu dữ liệu tín nhiệm, thanh khoản hoặc chưa tính được chỉ số lợi suất/rủi ro."
         )
     elif score >= 75 and credit_rating not in {"BB", "B hoặc thấp hơn"}:
         verdict = "CÓ THỂ CÂN NHẮC"
@@ -623,15 +626,15 @@ BOND_PRESETS = {
 
 st.markdown(
     '''<div class="masthead">
-    <div class="wordmark"><span class="brand-monogram" aria-hidden="true">SN</span>STOCK NEWS <span class="brand-ai">AI</span></div>
-    <div class="edition">Nghiên cứu thị trường Việt Nam</div>
+    <div class="wordmark"><span class="brand-monogram" aria-hidden="true">☼</span><span class="brand-name">Nắng<span class="brand-subtitle">MARKET NOTES</span></span></div>
+    <div class="edition">Một góc nhìn sáng rõ · Thị trường Việt Nam</div>
     </div>
     <section class="editorial-hero">
-      <div><div class="eyebrow">Thông tin &amp; phân tích đầu tư</div>
-      <h1><span class="hero-line">Đọc tin hôm nay.</span><span class="hero-line">Hiểu giá trị dài hạn.</span></h1></div>
+      <div><div class="eyebrow">Sổ tay thị trường / Tin tức &amp; trái phiếu</div>
+      <h1><span class="hero-line">Chuyện thị trường,</span><span class="hero-line">đọc thật sáng rõ.</span></h1></div>
       <div class="hero-brief"><span class="brief-mark" aria-hidden="true">↗</span>
-      <p class="hero-copy">Tổng hợp tin doanh nghiệp, phân tích lợi suất và nhìn rõ rủi ro trái phiếu.</p>
-      <div class="brief-note">Dữ liệu công khai. Góc nhìn có cơ sở.</div></div>
+      <p class="hero-copy">Từ một dòng tin đến bức tranh doanh nghiệp. Ghi lại sự kiện, đối chiếu số liệu và tìm hiểu giá trị trái phiếu.</p>
+      <div class="brief-note">Đọc chậm một chút. Hiểu sâu thêm một chút.</div></div>
     </section>''',
     unsafe_allow_html=True
 )
@@ -659,8 +662,8 @@ with tab_news:
         model = os.getenv("OPENAI_MODEL", "gpt-5.6-luna")
         if use_ai:
             model = st.text_input("OpenAI model", value=model, key="news_model")
-        run = st.button("Tổng hợp bản tin  ↗", type="primary", use_container_width=True, key="news_run")
-        st.markdown('<div class="sidebar-footer"><span aria-hidden="true">✧</span> Tin từ Google News<br>Tóm tắt theo yêu cầu · Luôn có bài gốc</div>', unsafe_allow_html=True)
+        run = st.button("Tổng hợp bản tin  ↗", type="primary", width="stretch", key="news_run")
+        st.markdown('<div class="sidebar-footer"><span aria-hidden="true">☼</span> Nắng · Market Notes<br>Tin từ Google News · Đối chiếu tại nguồn</div>', unsafe_allow_html=True)
 
     tickers = []
     for part in ticker_text.split(","):
@@ -680,7 +683,10 @@ with tab_news:
         loading.markdown('<div class="loading-note" role="status"><i></i><i></i><i></i> Đang tìm những câu chuyện mới…</div>', unsafe_allow_html=True)
         try:
             for ticker in tickers:
-                all_news.extend(fetch_google_news(ticker, days, max_items))
+                try:
+                    all_news.extend(fetch_google_news(ticker, days, max_items))
+                except requests.RequestException:
+                    st.warning(f"Chưa tải được bảng tin cho {ticker}. Bạn có thể thử lại sau.")
         finally:
             loading.empty()
 
@@ -880,7 +886,7 @@ with tab_bond:
         submitted = st.form_submit_button(
             "Tính định giá & tổng hợp kết luận  ↗",
             type="primary",
-            use_container_width=True
+            width="stretch"
         )
 
     freq_map = {"Hàng năm": 1, "Nửa năm": 2, "Hàng quý": 4, "Hàng tháng": 12}
@@ -1001,12 +1007,12 @@ with tab_bond:
     st.markdown("### Lịch thanh toán & dòng tiền")
     cashflow_df = bond_cashflows(
         face_value, coupon_rate, years, m,
-        required_yield if calc_mode == "Tính giá lý thuyết" else (ytm or required_yield)
+        required_yield if calc_mode == "Tính giá lý thuyết" or ytm is None else ytm
     )
     st.dataframe(
         cashflow_df,
         hide_index=True,
-        use_container_width=True,
+        width="stretch",
         column_config={
             "Kỳ": st.column_config.NumberColumn("Kỳ"),
             "Thời gian (năm)": st.column_config.NumberColumn("Thời gian (năm)", format="%.2f"),
@@ -1033,7 +1039,7 @@ with tab_bond:
         "- **Modified Duration**: xấp xỉ % thay đổi giá khi yield thay đổi 1 điểm phần trăm."
     )
 
-st.markdown('<div class="page-footer"><span class="wordmark">STOCK NEWS AI</span><span class="eyebrow">Tin doanh nghiệp &amp; phân tích trái phiếu</span></div>', unsafe_allow_html=True)
+st.markdown('<div class="page-footer"><span class="wordmark">☼ NẮNG / MARKET NOTES</span><span class="eyebrow">Ghi chép hôm nay · Hiểu thêm ngày mai</span></div>', unsafe_allow_html=True)
 st.caption(
     "⚠️ Công cụ phục vụ học tập/phân tích và sàng lọc sơ bộ, không phải khuyến nghị đầu tư cá nhân. "
     "Bond Valuation giả định trái phiếu coupon cố định, dòng tiền đều; kết luận đầu tư vẫn cần kiểm tra "
